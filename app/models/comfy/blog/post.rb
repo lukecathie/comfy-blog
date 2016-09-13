@@ -34,6 +34,22 @@ class Comfy::Blog::Post < ActiveRecord::Base
                     :set_published_at,
                     :set_date
   
+  def to_liquid
+    Drops::PostDrop.new(self)
+  end
+
+  def tags
+    []
+  end
+
+  def site
+    blog.site
+  end
+
+  def blocks
+    []
+  end
+
 protected
   
   def set_slug

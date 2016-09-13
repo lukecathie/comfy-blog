@@ -1,4 +1,5 @@
 class Comfy::Blog::PostsController < Comfy::Blog::BaseController
+  include Comfy::LiquidContentHelper
 
   skip_before_action :load_blog, :only => [:serve]
 
@@ -46,8 +47,41 @@ class Comfy::Blog::PostsController < Comfy::Blog::BaseController
     end
     @comment = @post.comments.new
 
+    respond_to do |format|
+      format.html { render_page }
+      # format.json { render :json => @cms_page }
+    end
+
+    return
+
   rescue ActiveRecord::RecordNotFound
     render :cms_page => '/404', :status => 404
   end
 
+protected
+ def mime_type
+    'text/html'
+  end
+
+  def render_page(status = 200)
+    cms_layout = Comfy::Cms::Layout.where(identifier: 'news').first
+    if @cms_layout = cms_layout
+
+      p cms_layout
+      
+
+      app_layout = (@cms_layout.app_layout.blank? || request.xhr?) ? false : @cms_layout.app_layout
+      p app_layout
+      p ::ComfortableMexicanSofa::Tag.process_content(
+        @post, ::ComfortableMexicanSofa::Tag.sanitize_irb(cms_layout.merged_content)
+      )
+
+      render  :inline       => liquid_parse(@post.content),
+              :layout       => app_layout,
+              :status       => status,
+              :content_type => mime_type
+    else
+      render :text => I18n.t('comfy.cms.content.layout_not_found'), :status => 404
+    end
+  end
 end
